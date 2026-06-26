@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #111; color: #fff; }
+    .container { max-width: 980px; margin: 0 auto; padding: 32px 20px; }
+    .card { background: #1b1b1b; border: 1px solid #333; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    input, textarea, button { width: 100%; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid #444; }
+    button { background: #e11d48; color: #fff; cursor: pointer; }
+    .mt { margin-top: 12px; }
+    .row { display: flex; gap: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Portfolio Admin</h1>
+    <div class="card">
+      <h2>Login</h2>
+      <input id="username" placeholder="Username" />
+      <input id="password" type="password" placeholder="Password" />
+      <button id="loginBtn">Login</button>
+      <div id="loginStatus" class="mt"></div>
+    </div>
+
+    <div class="card" id="adminPanel" style="display:none;">
+      <h2>Manage Projects</h2>
+      <input id="projectTitle" placeholder="Title" />
+      <textarea id="projectDescription" placeholder="Description"></textarea>
+      <input id="projectCategory" placeholder="Category" />
+      <input id="projectTags" placeholder="Tags (comma separated)" />
+      <button id="createProjectBtn">Add Project</button>
+      <div id="projectStatus" class="mt"></div>
+    </div>
+  </div>
+
+  <script>
+    const loginBtn = document.getElementById('loginBtn');
+    const loginStatus = document.getElementById('loginStatus');
+    const adminPanel = document.getElementById('adminPanel');
+
+    loginBtn.addEventListener('click', async () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        loginStatus.textContent = 'Logged in successfully';
+        adminPanel.style.display = 'block';
+      } else {
+        loginStatus.textContent = data.message || 'Login failed';
+      }
+    });
+
+    document.getElementById('createProjectBtn').addEventListener('click', async () => {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: document.getElementById('projectTitle').value,
+          description: document.getElementById('projectDescription').value,
+          category: document.getElementById('projectCategory').value,
+          tags: document.getElementById('projectTags').value.split(',').map(t => t.trim()).filter(Boolean),
+          featured: true
+        })
+      });
+      const data = await response.json();
+      document.getElementById('projectStatus').textContent = data.success ? 'Project added' : data.message;
+    });
+  </script>
+</body>
+</html>
